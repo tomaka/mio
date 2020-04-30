@@ -12,7 +12,6 @@ use std::io::{Read, Write};
 use std::net::{self, SocketAddr, SocketAddrV4, SocketAddrV6, Ipv4Addr, Ipv6Addr};
 use std::time::Duration;
 
-use net2::TcpBuilder;
 use iovec::IoVec;
 
 use {io, sys, Ready, Poll, PollOpt, Token};
@@ -61,7 +60,7 @@ use poll::SelectorId;
 /// # }
 /// ```
 pub struct TcpStream {
-    sys: sys::TcpStream,
+    //sys: sys::TcpStream,
     selector_id: SelectorId,
 }
 
@@ -90,16 +89,7 @@ impl TcpStream {
     /// `TcpStream::connect_stream` to transfer ownership into mio and schedule
     /// the connect operation.
     pub fn connect(addr: &SocketAddr) -> io::Result<TcpStream> {
-        let sock = match *addr {
-            SocketAddr::V4(..) => TcpBuilder::new_v4(),
-            SocketAddr::V6(..) => TcpBuilder::new_v6(),
-        }?;
-        // Required on Windows for a future `connect_overlapped` operation to be
-        // executed successfully.
-        if cfg!(windows) {
-            sock.bind(&inaddr_any(addr))?;
-        }
-        TcpStream::connect_stream(sock.to_tcp_stream()?, addr)
+        Err(From::from(io::ErrorKind::Other))
     }
 
     /// Creates a new `TcpStream` from the pending socket inside the given
@@ -122,10 +112,7 @@ impl TcpStream {
     ///   (perhaps to `INADDR_ANY`) before this method is called.
     pub fn connect_stream(stream: net::TcpStream,
                           addr: &SocketAddr) -> io::Result<TcpStream> {
-        Ok(TcpStream {
-            sys: sys::TcpStream::connect(stream, addr)?,
-            selector_id: SelectorId::new(),
-        })
+                            Err(From::from(io::ErrorKind::Other))
     }
 
     /// Creates a new `TcpStream` from a standard `net::TcpStream`.
@@ -139,22 +126,17 @@ impl TcpStream {
     /// it should already be connected via some other means (be it manually, the
     /// net2 crate, or the standard library).
     pub fn from_stream(stream: net::TcpStream) -> io::Result<TcpStream> {
-        set_nonblocking(&stream)?;
-
-        Ok(TcpStream {
-            sys: sys::TcpStream::from_stream(stream),
-            selector_id: SelectorId::new(),
-        })
+        Err(From::from(io::ErrorKind::Other))
     }
 
     /// Returns the socket address of the remote peer of this TCP connection.
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
-        self.sys.peer_addr()
+        unimplemented!()
     }
 
     /// Returns the socket address of the local half of this TCP connection.
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.sys.local_addr()
+        unimplemented!()
     }
 
     /// Creates a new independently owned handle to the underlying socket.
@@ -164,12 +146,7 @@ impl TcpStream {
     /// data, and options set on one stream will be propagated to the other
     /// stream.
     pub fn try_clone(&self) -> io::Result<TcpStream> {
-        self.sys.try_clone().map(|s| {
-            TcpStream {
-                sys: s,
-                selector_id: self.selector_id.clone(),
-            }
-        })
+        unimplemented!()
     }
 
     /// Shuts down the read, write, or both halves of this connection.
@@ -178,7 +155,7 @@ impl TcpStream {
     /// portions to return immediately with an appropriate value (see the
     /// documentation of `Shutdown`).
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
-        self.sys.shutdown(how)
+        unimplemented!()
     }
 
     /// Sets the value of the `TCP_NODELAY` option on this socket.
@@ -189,7 +166,7 @@ impl TcpStream {
     /// sufficient amount to send out, thereby avoiding the frequent sending of
     /// small packets.
     pub fn set_nodelay(&self, nodelay: bool) -> io::Result<()> {
-        self.sys.set_nodelay(nodelay)
+        unimplemented!()
     }
 
     /// Gets the value of the `TCP_NODELAY` option on this socket.
@@ -198,7 +175,7 @@ impl TcpStream {
     ///
     /// [link]: #method.set_nodelay
     pub fn nodelay(&self) -> io::Result<bool> {
-        self.sys.nodelay()
+        unimplemented!()
     }
 
     /// Sets the value of the `SO_RCVBUF` option on this socket.
@@ -206,7 +183,7 @@ impl TcpStream {
     /// Changes the size of the operating system's receive buffer associated
     /// with the socket.
     pub fn set_recv_buffer_size(&self, size: usize) -> io::Result<()> {
-        self.sys.set_recv_buffer_size(size)
+        unimplemented!()
     }
 
     /// Gets the value of the `SO_RCVBUF` option on this socket.
@@ -216,7 +193,7 @@ impl TcpStream {
     ///
     /// [link]: #method.set_recv_buffer_size
     pub fn recv_buffer_size(&self) -> io::Result<usize> {
-        self.sys.recv_buffer_size()
+        unimplemented!()
     }
 
     /// Sets the value of the `SO_SNDBUF` option on this socket.
@@ -224,7 +201,7 @@ impl TcpStream {
     /// Changes the size of the operating system's send buffer associated with
     /// the socket.
     pub fn set_send_buffer_size(&self, size: usize) -> io::Result<()> {
-        self.sys.set_send_buffer_size(size)
+        unimplemented!()
     }
 
     /// Gets the value of the `SO_SNDBUF` option on this socket.
@@ -234,7 +211,7 @@ impl TcpStream {
     ///
     /// [link]: #method.set_send_buffer_size
     pub fn send_buffer_size(&self) -> io::Result<usize> {
-        self.sys.send_buffer_size()
+        unimplemented!()
     }
 
     /// Sets whether keepalive messages are enabled to be sent on this socket.
@@ -250,7 +227,7 @@ impl TcpStream {
     /// Some platforms specify this value in seconds, so sub-second
     /// specifications may be omitted.
     pub fn set_keepalive(&self, keepalive: Option<Duration>) -> io::Result<()> {
-        self.sys.set_keepalive(keepalive)
+        unimplemented!()
     }
 
     /// Returns whether keepalive messages are enabled on this socket, and if so
@@ -260,7 +237,7 @@ impl TcpStream {
     ///
     /// [link]: #method.set_keepalive
     pub fn keepalive(&self) -> io::Result<Option<Duration>> {
-        self.sys.keepalive()
+        unimplemented!()
     }
 
     /// Sets the value for the `IP_TTL` option on this socket.
@@ -268,7 +245,7 @@ impl TcpStream {
     /// This value sets the time-to-live field that is used in every packet sent
     /// from this socket.
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
-        self.sys.set_ttl(ttl)
+        unimplemented!()
     }
 
     /// Gets the value of the `IP_TTL` option for this socket.
@@ -277,7 +254,7 @@ impl TcpStream {
     ///
     /// [link]: #method.set_ttl
     pub fn ttl(&self) -> io::Result<u32> {
-        self.sys.ttl()
+        unimplemented!()
     }
 
     /// Sets the value for the `IPV6_V6ONLY` option on this socket.
@@ -289,7 +266,7 @@ impl TcpStream {
     /// If this is set to `false` then the socket can be used to send and
     /// receive packets from an IPv4-mapped IPv6 address.
     pub fn set_only_v6(&self, only_v6: bool) -> io::Result<()> {
-        self.sys.set_only_v6(only_v6)
+        unimplemented!()
     }
 
     /// Gets the value of the `IPV6_V6ONLY` option for this socket.
@@ -298,12 +275,12 @@ impl TcpStream {
     ///
     /// [link]: #method.set_only_v6
     pub fn only_v6(&self) -> io::Result<bool> {
-        self.sys.only_v6()
+        unimplemented!()
     }
 
     /// Sets the value for the `SO_LINGER` option on this socket.
     pub fn set_linger(&self, dur: Option<Duration>) -> io::Result<()> {
-        self.sys.set_linger(dur)
+        unimplemented!()
     }
 
     /// Gets the value of the `SO_LINGER` option on this socket.
@@ -312,7 +289,7 @@ impl TcpStream {
     ///
     /// [link]: #method.set_linger
     pub fn linger(&self) -> io::Result<Option<Duration>> {
-        self.sys.linger()
+        unimplemented!()
     }
 
     #[deprecated(since = "0.6.9", note = "use set_keepalive")]
@@ -341,7 +318,7 @@ impl TcpStream {
     /// the field in the process. This can be useful for checking errors between
     /// calls.
     pub fn take_error(&self) -> io::Result<Option<io::Error>> {
-        self.sys.take_error()
+        unimplemented!()
     }
 
     /// Receives data on the socket from the remote address to which it is
@@ -351,7 +328,7 @@ impl TcpStream {
     /// Successive calls return the same data. This is accomplished by passing
     /// `MSG_PEEK` as a flag to the underlying recv system call.
     pub fn peek(&self, buf: &mut [u8]) -> io::Result<usize> {
-        self.sys.peek(buf)
+        unimplemented!()
     }
 
     /// Read in a list of buffers all at once.
@@ -369,7 +346,7 @@ impl TcpStream {
     ///
     /// On Unix this corresponds to the `readv` syscall.
     pub fn read_bufs(&self, bufs: &mut [&mut IoVec]) -> io::Result<usize> {
-        self.sys.readv(bufs)
+        unimplemented!()
     }
 
     /// Write a list of buffers all at once.
@@ -387,7 +364,7 @@ impl TcpStream {
     ///
     /// On Unix this corresponds to the `writev` syscall.
     pub fn write_bufs(&self, bufs: &[&IoVec]) -> io::Result<usize> {
-        self.sys.writev(bufs)
+        unimplemented!()
     }
 }
 
@@ -408,33 +385,33 @@ fn inaddr_any(other: &SocketAddr) -> SocketAddr {
 
 impl Read for TcpStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        (&self.sys).read(buf)
+        unimplemented!()
     }
 }
 
 impl<'a> Read for &'a TcpStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        (&self.sys).read(buf)
+        unimplemented!()
     }
 }
 
 impl Write for TcpStream {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        (&self.sys).write(buf)
+        unimplemented!()
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        (&self.sys).flush()
+        unimplemented!()
     }
 }
 
 impl<'a> Write for &'a TcpStream {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        (&self.sys).write(buf)
+        unimplemented!()
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        (&self.sys).flush()
+        unimplemented!()
     }
 }
 
@@ -442,22 +419,22 @@ impl Evented for TcpStream {
     fn register(&self, poll: &Poll, token: Token,
                 interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(poll)?;
-        self.sys.register(poll, token, interest, opts)
+        unimplemented!()
     }
 
     fn reregister(&self, poll: &Poll, token: Token,
                   interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.sys.reregister(poll, token, interest, opts)
+                    unimplemented!()
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.sys.deregister(poll)
+        unimplemented!()
     }
 }
 
 impl fmt::Debug for TcpStream {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(&self.sys, f)
+        unimplemented!()
     }
 }
 
@@ -498,7 +475,7 @@ impl fmt::Debug for TcpStream {
 /// # }
 /// ```
 pub struct TcpListener {
-    sys: sys::TcpListener,
+    //sys: sys::TcpListener,
     selector_id: SelectorId,
 }
 
@@ -518,26 +495,7 @@ impl TcpListener {
     /// combination with the `TcpListener::from_listener` method to transfer
     /// ownership into mio.
     pub fn bind(addr: &SocketAddr) -> io::Result<TcpListener> {
-        // Create the socket
-        let sock = match *addr {
-            SocketAddr::V4(..) => TcpBuilder::new_v4(),
-            SocketAddr::V6(..) => TcpBuilder::new_v6(),
-        }?;
-
-        // Set SO_REUSEADDR, but only on Unix (mirrors what libstd does)
-        if cfg!(unix) {
-            sock.reuse_address(true)?;
-        }
-
-        // Bind the socket
-        sock.bind(addr)?;
-
-        // listen
-        let listener = sock.listen(1024)?;
-        Ok(TcpListener {
-            sys: sys::TcpListener::new(listener)?,
-            selector_id: SelectorId::new(),
-        })
+        Err(From::from(io::ErrorKind::Other))
     }
 
     #[deprecated(since = "0.6.13", note = "use from_std instead")]
@@ -558,12 +516,7 @@ impl TcpListener {
     ///
     /// The address provided must be the address that the listener is bound to.
     pub fn from_std(listener: net::TcpListener) -> io::Result<TcpListener> {
-        sys::TcpListener::new(listener).map(|s| {
-            TcpListener {
-                sys: s,
-                selector_id: SelectorId::new(),
-            }
-        })
+        Err(From::from(io::ErrorKind::Other))
     }
 
     /// Accepts a new `TcpStream`.
@@ -586,12 +539,12 @@ impl TcpListener {
     /// *in blocking mode* which isn't bound to `mio`. This can be later then
     /// converted to a `mio` type, if necessary.
     pub fn accept_std(&self) -> io::Result<(net::TcpStream, SocketAddr)> {
-        self.sys.accept()
+        unimplemented!()
     }
 
     /// Returns the local socket address of this listener.
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
-        self.sys.local_addr()
+        unimplemented!()
     }
 
     /// Creates a new independently owned handle to the underlying socket.
@@ -600,12 +553,7 @@ impl TcpListener {
     /// object references. Both handles can be used to accept incoming
     /// connections and options set on one listener will affect the other.
     pub fn try_clone(&self) -> io::Result<TcpListener> {
-        self.sys.try_clone().map(|s| {
-            TcpListener {
-                sys: s,
-                selector_id: self.selector_id.clone(),
-            }
-        })
+        unimplemented!()
     }
 
     /// Sets the value for the `IP_TTL` option on this socket.
@@ -613,7 +561,7 @@ impl TcpListener {
     /// This value sets the time-to-live field that is used in every packet sent
     /// from this socket.
     pub fn set_ttl(&self, ttl: u32) -> io::Result<()> {
-        self.sys.set_ttl(ttl)
+        unimplemented!()
     }
 
     /// Gets the value of the `IP_TTL` option for this socket.
@@ -622,7 +570,7 @@ impl TcpListener {
     ///
     /// [link]: #method.set_ttl
     pub fn ttl(&self) -> io::Result<u32> {
-        self.sys.ttl()
+        unimplemented!()
     }
 
     /// Sets the value for the `IPV6_V6ONLY` option on this socket.
@@ -634,7 +582,7 @@ impl TcpListener {
     /// If this is set to `false` then the socket can be used to send and
     /// receive packets from an IPv4-mapped IPv6 address.
     pub fn set_only_v6(&self, only_v6: bool) -> io::Result<()> {
-        self.sys.set_only_v6(only_v6)
+        unimplemented!()
     }
 
     /// Gets the value of the `IPV6_V6ONLY` option for this socket.
@@ -643,7 +591,7 @@ impl TcpListener {
     ///
     /// [link]: #method.set_only_v6
     pub fn only_v6(&self) -> io::Result<bool> {
-        self.sys.only_v6()
+        unimplemented!()
     }
 
     /// Get the value of the `SO_ERROR` option on this socket.
@@ -652,7 +600,7 @@ impl TcpListener {
     /// the field in the process. This can be useful for checking errors between
     /// calls.
     pub fn take_error(&self) -> io::Result<Option<io::Error>> {
-        self.sys.take_error()
+        unimplemented!()
     }
 }
 
@@ -660,22 +608,22 @@ impl Evented for TcpListener {
     fn register(&self, poll: &Poll, token: Token,
                 interest: Ready, opts: PollOpt) -> io::Result<()> {
         self.selector_id.associate_selector(poll)?;
-        self.sys.register(poll, token, interest, opts)
+        unimplemented!()
     }
 
     fn reregister(&self, poll: &Poll, token: Token,
                   interest: Ready, opts: PollOpt) -> io::Result<()> {
-        self.sys.reregister(poll, token, interest, opts)
+                    unimplemented!()
     }
 
     fn deregister(&self, poll: &Poll) -> io::Result<()> {
-        self.sys.deregister(poll)
+        unimplemented!()
     }
 }
 
 impl fmt::Debug for TcpListener {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(&self.sys, f)
+        unimplemented!()
     }
 }
 
@@ -706,7 +654,7 @@ impl AsRawFd for TcpStream {
 impl FromRawFd for TcpStream {
     unsafe fn from_raw_fd(fd: RawFd) -> TcpStream {
         TcpStream {
-            sys: FromRawFd::from_raw_fd(fd),
+            //sys: FromRawFd::from_raw_fd(fd),
             selector_id: SelectorId::new(),
         }
     }

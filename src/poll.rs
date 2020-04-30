@@ -328,7 +328,7 @@ use std::time::{Duration, Instant};
 /// [`Poll::poll`]: struct.Poll.html#method.poll
 pub struct Poll {
     // Platform specific IO selector
-    selector: sys::Selector,
+    //selector: sys::Selector,
 
     // Custom readiness queue
     readiness_queue: ReadinessQueue,
@@ -484,7 +484,7 @@ unsafe impl Sync for ReadinessQueue {}
 
 struct ReadinessQueueInner {
     // Used to wake up `Poll` when readiness is set in another thread.
-    awakener: sys::Awakener,
+    //awakener: sys::Awakener,
 
     // Head of the MPSC queue used to signal readiness to `Poll::poll`.
     head_readiness: AtomicPtr<ReadinessNode>,
@@ -650,21 +650,7 @@ impl Poll {
     /// # }
     /// ```
     pub fn new() -> io::Result<Poll> {
-        is_send::<Poll>();
-        is_sync::<Poll>();
-
-        let poll = Poll {
-            selector: sys::Selector::new()?,
-            readiness_queue: ReadinessQueue::new()?,
-            lock_state: AtomicUsize::new(0),
-            lock: Mutex::new(()),
-            condvar: Condvar::new(),
-        };
-
-        // Register the notification wakeup FD with the IO poller
-        poll.readiness_queue.inner.awakener.register(&poll, AWAKEN, Ready::readable(), PollOpt::edge())?;
-
-        Ok(poll)
+        Err(From::from(io::ErrorKind::Other))
     }
 
     /// Register an `Evented` handle with the `Poll` instance.
@@ -1153,56 +1139,7 @@ impl Poll {
     #[inline]
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::if_same_then_else))]
     fn poll2(&self, events: &mut Events, mut timeout: Option<Duration>, interruptible: bool) -> io::Result<usize> {
-        // Compute the timeout value passed to the system selector. If the
-        // readiness queue has pending nodes, we still want to poll the system
-        // selector for new events, but we don't want to block the thread to
-        // wait for new events.
-        if timeout == Some(Duration::from_millis(0)) {
-            // If blocking is not requested, then there is no need to prepare
-            // the queue for sleep
-            //
-            // The sleep_marker should be removed by readiness_queue.poll().
-        } else if self.readiness_queue.prepare_for_sleep() {
-            // The readiness queue is empty. The call to `prepare_for_sleep`
-            // inserts `sleep_marker` into the queue. This signals to any
-            // threads setting readiness that the `Poll::poll` is going to
-            // sleep, so the awakener should be used.
-        } else {
-            // The readiness queue is not empty, so do not block the thread.
-            timeout = Some(Duration::from_millis(0));
-        }
-
-        loop {
-            let now = Instant::now();
-            // First get selector events
-            let res = self.selector.select(&mut events.inner, AWAKEN, timeout);
-            match res {
-                Ok(true) => {
-                    // Some awakeners require reading from a FD.
-                    self.readiness_queue.inner.awakener.cleanup();
-                    break;
-                }
-                Ok(false) => break,
-                Err(ref e) if e.kind() == io::ErrorKind::Interrupted && !interruptible => {
-                    // Interrupted by a signal; update timeout if necessary and retry
-                    if let Some(to) = timeout {
-                        let elapsed = now.elapsed();
-                        if elapsed >= to {
-                            break;
-                        } else {
-                            timeout = Some(to - elapsed);
-                        }
-                    }
-                }
-                Err(e) => return Err(e),
-            }
-        }
-
-        // Poll custom event queue
-        self.readiness_queue.poll(&mut events.inner);
-
-        // Return number of polled events
-        Ok(events.inner.len())
+        Err(From::from(io::ErrorKind::Other))
     }
 }
 
@@ -1268,7 +1205,7 @@ impl AsRawFd for Poll {
 /// [`Poll::poll`]: struct.Poll.html#method.poll
 /// [`Poll`]: struct.Poll.html
 pub struct Events {
-    inner: sys::Events,
+    //inner: sys::Events,
 }
 
 /// [`Events`] iterator.
@@ -1358,21 +1295,19 @@ impl Events {
     /// assert_eq!(1024, events.capacity());
     /// ```
     pub fn with_capacity(capacity: usize) -> Events {
-        Events {
-            inner: sys::Events::with_capacity(capacity),
-        }
+        unimplemented!()
     }
 
     #[deprecated(since="0.6.10", note="Index access removed in favor of iterator only API.")]
     #[doc(hidden)]
     pub fn get(&self, idx: usize) -> Option<Event> {
-        self.inner.get(idx)
+        unimplemented!()
     }
 
     #[doc(hidden)]
     #[deprecated(since="0.6.10", note="Index access removed in favor of iterator only API.")]
     pub fn len(&self) -> usize {
-        self.inner.len()
+        unimplemented!()
     }
 
     /// Returns the number of `Event` values that `self` can hold.
@@ -1385,7 +1320,7 @@ impl Events {
     /// assert_eq!(1024, events.capacity());
     /// ```
     pub fn capacity(&self) -> usize {
-        self.inner.capacity()
+        unimplemented!()
     }
 
     /// Returns `true` if `self` contains no `Event` values.
@@ -1400,7 +1335,7 @@ impl Events {
     /// assert!(events.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
+        unimplemented!()
     }
 
     /// Returns an iterator over the `Event` values.
@@ -1467,7 +1402,7 @@ impl Events {
     /// # }
     /// ```
     pub fn clear(&mut self) {
-        self.inner.clear();
+        unimplemented!()
     }
 }
 
@@ -1484,9 +1419,7 @@ impl<'a> Iterator for Iter<'a> {
     type Item = Event;
 
     fn next(&mut self) -> Option<Event> {
-        let ret = self.inner.inner.get(self.pos);
-        self.pos += 1;
-        ret
+        unimplemented!()
     }
 }
 
@@ -1506,9 +1439,7 @@ impl Iterator for IntoIter {
     type Item = Event;
 
     fn next(&mut self) -> Option<Event> {
-        let ret = self.inner.inner.get(self.pos);
-        self.pos += 1;
-        ret
+        unimplemented!()
     }
 }
 
@@ -1522,9 +1453,9 @@ impl fmt::Debug for Events {
 
 // ===== Accessors for internal usage =====
 
-pub fn selector(poll: &Poll) -> &sys::Selector {
+/*pub fn selector(poll: &Poll) -> &sys::Selector {
     &poll.selector
-}
+}*/
 
 /*
  *
@@ -2094,29 +2025,11 @@ impl Drop for RegistrationInner {
 impl ReadinessQueue {
     /// Create a new `ReadinessQueue`.
     fn new() -> io::Result<ReadinessQueue> {
-        is_send::<Self>();
-        is_sync::<Self>();
-
-        let end_marker = Box::new(ReadinessNode::marker());
-        let sleep_marker = Box::new(ReadinessNode::marker());
-        let closed_marker = Box::new(ReadinessNode::marker());
-
-        let ptr = &*end_marker as *const _ as *mut _;
-
-        Ok(ReadinessQueue {
-            inner: Arc::new(ReadinessQueueInner {
-                awakener: sys::Awakener::new()?,
-                head_readiness: AtomicPtr::new(ptr),
-                tail_readiness: UnsafeCell::new(ptr),
-                end_marker,
-                sleep_marker,
-                closed_marker,
-            })
-        })
+        Err(From::from(io::ErrorKind::Other))
     }
 
     /// Poll the queue for new events
-    fn poll(&self, dst: &mut sys::Events) {
+    /*fn poll(&self, dst: &mut sys::Events) {
         // `until` is set with the first node that gets re-enqueued due to being
         // set to have level-triggered notifications. This prevents an infinite
         // loop where `Poll::poll` will keep dequeuing nodes it enqueues.
@@ -2218,7 +2131,7 @@ impl ReadinessQueue {
                 dst.push_event(Event::new(readiness, token));
             }
         }
-    }
+    }*/
 
     /// Prepare the queue for the `Poll::poll` thread to block in the system
     /// selector. This involves changing `head_readiness` to `sleep_marker`.
@@ -2307,7 +2220,7 @@ impl Drop for ReadinessQueue {
 
 impl ReadinessQueueInner {
     fn wakeup(&self) -> io::Result<()> {
-        self.awakener.wakeup()
+        Err(From::from(io::ErrorKind::Other))
     }
 
     /// Prepend the given node to the head of the readiness queue. This is done
@@ -2756,14 +2669,7 @@ impl SelectorId {
     }
 
     pub fn associate_selector(&self, poll: &Poll) -> io::Result<()> {
-        let selector_id = self.id.load(Ordering::SeqCst);
-
-        if selector_id != 0 && selector_id != poll.selector.id() {
-            Err(io::Error::new(io::ErrorKind::Other, "socket already registered"))
-        } else {
-            self.id.store(poll.selector.id(), Ordering::SeqCst);
-            Ok(())
-        }
+        Err(From::from(io::ErrorKind::Other))
     }
 }
 

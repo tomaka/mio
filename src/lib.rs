@@ -108,7 +108,6 @@
 //!
 //! ```
 
-extern crate net2;
 extern crate iovec;
 extern crate slab;
 
